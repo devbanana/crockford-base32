@@ -4,6 +4,7 @@
   "description": "An implementation of Douglas Crockford's base 32 encoding algorithm",
   "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
     "test": "jest",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\""
