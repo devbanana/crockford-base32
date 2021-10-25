@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "files": ["src/crockford-base32.spec.ts"]
+  "files": ["src/index.spec.ts"]
 }

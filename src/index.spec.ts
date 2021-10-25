@@ -1,4 +1,4 @@
-import { CrockfordBase32 } from './crockford-base32';
+import { CrockfordBase32 } from './index';
 import { Buffer } from 'buffer';
 
 describe('Base32Encoder', () => {

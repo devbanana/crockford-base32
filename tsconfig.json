@@ -5,5 +5,5 @@
     "declaration": true,
     "strict": true
   },
-  "files": ["./src/crockford-base32.ts"]
+  "files": ["./src/index.ts"]
 }
