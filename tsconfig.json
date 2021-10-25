@@ -5,8 +5,7 @@
     "declaration": true,
     "strict": true
   },
-  "exclude": [
-    "node_modules",
-    "dist"
+  "files": [
+    "./src/crockford-base32.ts"
   ]
 }
