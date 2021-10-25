@@ -1,6 +1,6 @@
 {
   "name": "crockford-base32",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An implementation of Douglas Crockford's base 32 encoding algorithm",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
