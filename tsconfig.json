@@ -1,11 +1,9 @@
 {
-    "extends": "@tsconfig/node14/tsconfig.json",
+  "extends": "@tsconfig/node14/tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
     "declaration": true,
     "strict": true
   },
-  "files": [
-    "./src/crockford-base32.ts"
-  ]
+  "files": ["./src/crockford-base32.ts"]
 }
