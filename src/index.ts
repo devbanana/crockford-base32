@@ -14,6 +14,9 @@ export class CrockfordBase32 {
     if (typeof input === 'number') {
       input = this.createBuffer(input);
       pad = false;
+    } else {
+      // Copy the input buffer so it isn't modified when we call `reverse()`
+      input = Buffer.from(input);
     }
 
     const output = [];
@@ -37,10 +40,10 @@ export class CrockfordBase32 {
       output.unshift(buffer & 0x1f);
     }
 
-    let dataStart = false;
+    let dataFound = false;
     return output
       .filter(byte =>
-        !pad && !dataStart && byte === 0 ? false : (dataStart = true),
+        !pad && !dataFound && byte === 0 ? false : (dataFound = true),
       )
       .map(byte => characters.charAt(byte))
       .join('');

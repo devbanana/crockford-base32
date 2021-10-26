@@ -35,6 +35,12 @@ describe('Base32Encoder', () => {
         ),
       ).toBe('01FJSVJEYB82V18ZBR2F2TT8SS');
     });
+
+    it("doesn't modify the input buffer", () => {
+      const buffer = Buffer.from('test');
+      expect(CrockfordBase32.encode(buffer)).toBe('1T6AWVM');
+      expect(buffer.toString()).toBe('test');
+    });
   });
 
   describe('when decoding', () => {
