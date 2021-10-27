@@ -21,24 +21,27 @@ export class CrockfordBase32 {
     options?: EncodeOptions,
   ): string {
     let stripZeros = options?.stripLeadingZeros || false;
-    if (!(input instanceof Buffer)) {
-      input = this.createBuffer(input);
-      stripZeros = true;
-    } else {
+
+    if (input instanceof Buffer) {
       // Copy the input buffer so it isn't modified when we call `reverse()`
       input = Buffer.from(input);
+    } else {
+      input = this.createBuffer(input);
+      stripZeros = true;
     }
 
-    const output = [];
+    const output: number[] = [];
+    let bitsRead = 0;
+    let buffer = 0;
+
     // Work from the end of the buffer
     input.reverse();
 
-    let bitsRead = 0;
-    let buffer = 0;
     for (const byte of input) {
       // Add current byte to start of buffer
       buffer |= byte << bitsRead;
       bitsRead += 8;
+
       while (bitsRead >= 5) {
         output.unshift(buffer & 0x1f);
         buffer >>>= 5;
