@@ -136,5 +136,19 @@ describe('Base32Encoder', () => {
         'Invalid base 32 character found in string: &',
       );
     });
+
+    it('ignores hyphens', () => {
+      // noinspection SpellCheckingInspection
+      expect(CrockfordBase32.decode('3KDXPP-A83KEH-S6JVK7').toString()).toBe(
+        'some string',
+      );
+    });
+
+    it('ignores multiple adjacent hyphens', () => {
+      // noinspection SpellCheckingInspection
+      expect(CrockfordBase32.decode('3KDXPP--A83KEH---S6JVK7').toString()).toBe(
+        'some string',
+      );
+    });
   });
 });
