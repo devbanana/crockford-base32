@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to strip leading zeros from decoded value
 - Ability to decode to a `bigint` instead of `string`
 - `encode()` now accepts a `bigint` in addition to `Buffer` or `number`
+- Ignore hyphens when decoding
 
 ### Fixed
 
