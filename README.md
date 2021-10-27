@@ -21,9 +21,9 @@ CrockfordBase32.decode('3KDXPPA83KEHS6JVK7').toString(); // some string
 
 You can pass options to the `encode()` method to change how it performs the encoding:
 
-| Option            | Type    | Description                                          |
-| ----------------- | ------- | ---------------------------------------------------- |
-| stripLeadingZeros | boolean | Returns the encoded string without any leading zeros |
+| Option            | Type      | Default | Description                                          |
+| ----------------- | --------- | ------- | ---------------------------------------------------- |
+| stripLeadingZeros | `boolean` | `false` | Returns the encoded string without any leading zeros |
 
 ### Example
 
@@ -36,10 +36,10 @@ CrockfordBase32.encode(Buffer.from('\x00test'), { stripLeadingZeros: true }); //
 
 You can also pass options to `decode()` as follows:
 
-| Option            | Type    | Description                                                                         |
-| ----------------- | ------- | ----------------------------------------------------------------------------------- |
-| stripLeadingZeros | boolean | Strips all zeros from the decoded string.                                           |
-| asNumber          | boolean | `true` to return the decoded output as a `bigint`, `false` to return as a `Buffer`. |
+| Option            | Type      | Default | Description                                                                         |
+| ----------------- | --------- | ------- | ----------------------------------------------------------------------------------- |
+| stripLeadingZeros | `boolean` | `false` | Strips all zeros from the decoded string.                                           |
+| asNumber          | `boolean` | `false` | `true` to return the decoded output as a `bigint`, `false` to return as a `Buffer`. |
 
 ##### Example
 
