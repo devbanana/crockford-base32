@@ -29,6 +29,7 @@ describe('Base32Encoder', () => {
     });
 
     it('can encode a UUID into base 32', () => {
+      // noinspection SpellCheckingInspection
       expect(
         CrockfordBase32.encode(
           Buffer.from('017cb3b93bcb40b6147d7813c5ad2339', 'hex'),
@@ -38,13 +39,23 @@ describe('Base32Encoder', () => {
 
     it("doesn't modify the input buffer", () => {
       const buffer = Buffer.from('test');
+      // noinspection SpellCheckingInspection
       expect(CrockfordBase32.encode(buffer)).toBe('1T6AWVM');
       expect(buffer.toString()).toBe('test');
+    });
+
+    it('can strip leading zeros', () => {
+      expect(
+        CrockfordBase32.encode(Buffer.from('0000a9', 'hex'), {
+          stripLeadingZeros: true,
+        }),
+      ).toBe('59');
     });
   });
 
   describe('when decoding', () => {
     it('can decode a multiple of 5 bits', () => {
+      // noinspection SpellCheckingInspection
       expect(CrockfordBase32.decode('MVJP6D2Z').toString('hex')).toBe(
         'a6e563345f',
       );
@@ -84,9 +95,22 @@ describe('Base32Encoder', () => {
     );
 
     it('can decode a ULID', () => {
+      // noinspection SpellCheckingInspection
       expect(
         CrockfordBase32.decode('01FJSVJEYB82V18ZBR2F2TT8SS').toString('hex'),
       ).toBe('017cb3b93bcb40b6147d7813c5ad2339');
+    });
+
+    it('can strip leading zeros', () => {
+      expect(
+        CrockfordBase32.decode('00059', { stripLeadingZeros: true }).toString(
+          'hex',
+        ),
+      ).toBe('a9');
+    });
+
+    it('can return a number', () => {
+      expect(CrockfordBase32.decode('G3T', { asNumber: true })).toBe(16_506n);
     });
   });
 });
