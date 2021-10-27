@@ -24,21 +24,56 @@ describe('Base32Encoder', () => {
       expect(CrockfordBase32.encode(Buffer.from([0, 0, 0xa9]))).toBe('00059');
     });
 
-    it('can convert a number', () => {
+    it('can encode a number', () => {
       expect(CrockfordBase32.encode(388_864)).toBe('BVR0');
     });
 
+    it('can encode a bigint', () => {
+      expect(
+        CrockfordBase32.encode(10_336_657_440_695_546_835_250_649_691n),
+      ).toBe('8B691DAR2GC0Q2466JV');
+    });
+
+    it('cannot take a negative number', () => {
+      expect(() => CrockfordBase32.encode(-323213)).toThrowError(
+        'Input cannot be a negative number',
+      );
+    });
+
+    it('cannot take a negative bigint', () => {
+      expect(() => CrockfordBase32.encode(-21233n)).toThrowError(
+        'Input cannot be a negative number',
+      );
+    });
+
     it('can encode a UUID into base 32', () => {
+      // noinspection SpellCheckingInspection
       expect(
         CrockfordBase32.encode(
           Buffer.from('017cb3b93bcb40b6147d7813c5ad2339', 'hex'),
         ),
       ).toBe('01FJSVJEYB82V18ZBR2F2TT8SS');
     });
+
+    it("doesn't modify the input buffer", () => {
+      const buffer = Buffer.from('test');
+      // noinspection SpellCheckingInspection
+      expect(CrockfordBase32.encode(buffer)).toBe('1T6AWVM');
+      expect(buffer.toString()).toBe('test');
+    });
+
+    it('can strip leading zeros', () => {
+      expect(
+        CrockfordBase32.encode(Buffer.from('0000a9', 'hex'), {
+          stripLeadingZeros: true,
+        }),
+      ).toBe('59');
+    });
   });
 
   describe('when decoding', () => {
     it('can decode a multiple of 5 bits', () => {
+      // noinspection SpellCheckingInspection
       expect(CrockfordBase32.decode('MVJP6D2Z').toString('hex')).toBe(
         'a6e563345f',
       );
@@ -78,9 +113,42 @@ describe('Base32Encoder', () => {
     );
 
     it('can decode a ULID', () => {
+      // noinspection SpellCheckingInspection
       expect(
         CrockfordBase32.decode('01FJSVJEYB82V18ZBR2F2TT8SS').toString('hex'),
       ).toBe('017cb3b93bcb40b6147d7813c5ad2339');
+    });
+
+    it('can strip leading zeros', () => {
+      expect(
+        CrockfordBase32.decode('00059', { stripLeadingZeros: true }).toString(
+          'hex',
+        ),
+      ).toBe('a9');
+    });
+
+    it('can return a number', () => {
+      expect(CrockfordBase32.decode('G3T', { asNumber: true })).toBe(16_506n);
+    });
+
+    it('rejects any invalid base 32 character', () => {
+      expect(() => CrockfordBase32.decode('T&ZQ')).toThrowError(
+        'Invalid base 32 character found in string: &',
+      );
+    });
+
+    it('ignores hyphens', () => {
+      // noinspection SpellCheckingInspection
+      expect(CrockfordBase32.decode('3KDXPP-A83KEH-S6JVK7').toString()).toBe(
+        'some string',
+      );
+    });
+
+    it('ignores multiple adjacent hyphens', () => {
+      // noinspection SpellCheckingInspection
+      expect(CrockfordBase32.decode('3KDXPP--A83KEH---S6JVK7').toString()).toBe(
+        'some string',
+      );
     });
   });
 });
