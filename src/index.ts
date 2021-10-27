@@ -68,10 +68,15 @@ export class CrockfordBase32 {
     input: string,
     options?: DecodeAsNumberOptions | DecodeAsBufferOptions,
   ): bigint | Buffer {
-    // Translate input to all uppercase
-    input = input.toUpperCase();
-    // Translate I, L, and O to valid base 32 characters
-    input = input.replace(/O/g, '0').replace(/[IL]/g, '1');
+    // 1. Translate input to all uppercase
+    // 2. Translate I, L, and O to valid base 32 characters
+    // 3. Remove all hyphens
+    input = input
+      .toUpperCase()
+      .replace(/O/g, '0')
+      .replace(/[IL]/g, '1')
+      .replace(/-+/g, '');
+
     // Work from the end
     input = input.split('').reverse().join('');
 
