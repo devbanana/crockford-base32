@@ -24,8 +24,26 @@ describe('Base32Encoder', () => {
       expect(CrockfordBase32.encode(Buffer.from([0, 0, 0xa9]))).toBe('00059');
     });
 
-    it('can convert a number', () => {
+    it('can encode a number', () => {
       expect(CrockfordBase32.encode(388_864)).toBe('BVR0');
+    });
+
+    it('can encode a bigint', () => {
+      expect(
+        CrockfordBase32.encode(10_336_657_440_695_546_835_250_649_691n),
+      ).toBe('8B691DAR2GC0Q2466JV');
+    });
+
+    it('cannot take a negative number', () => {
+      expect(() => CrockfordBase32.encode(-323213)).toThrowError(
+        'Input cannot be a negative number',
+      );
+    });
+
+    it('cannot take a negative bigint', () => {
+      expect(() => CrockfordBase32.encode(-21233n)).toThrowError(
+        'Input cannot be a negative number',
+      );
     });
 
     it('can encode a UUID into base 32', () => {

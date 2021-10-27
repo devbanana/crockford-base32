@@ -16,9 +16,12 @@ type DecodeAsBufferOptions = { asNumber?: false } & EncodeOptions;
  * Spec: https://www.crockford.com/base32.html
  */
 export class CrockfordBase32 {
-  static encode(input: Buffer | number, options?: EncodeOptions): string {
+  static encode(
+    input: Buffer | number | bigint,
+    options?: EncodeOptions,
+  ): string {
     let stripZeros = options?.stripLeadingZeros || false;
-    if (typeof input === 'number') {
+    if (!(input instanceof Buffer)) {
       input = this.createBuffer(input);
       stripZeros = true;
     } else {
@@ -106,12 +109,20 @@ export class CrockfordBase32 {
     return this.asBuffer(output);
   }
 
-  private static createBuffer(input: number): Buffer {
+  private static createBuffer(input: number | bigint): Buffer {
+    if (typeof input === 'number') {
+      input = BigInt(input);
+    }
+
+    if (input < 0n) {
+      throw new Error('Input cannot be a negative number');
+    }
+
     const bytes = [];
 
-    while (input > 0) {
-      bytes.unshift(input & 0xff);
-      input >>>= 8;
+    while (input > 0n) {
+      bytes.unshift(Number(input & 0xffn));
+      input >>= 8n;
     }
 
     return Buffer.from(bytes);
