@@ -130,5 +130,11 @@ describe('Base32Encoder', () => {
     it('can return a number', () => {
       expect(CrockfordBase32.decode('G3T', { asNumber: true })).toBe(16_506n);
     });
+
+    it('rejects any invalid base 32 character', () => {
+      expect(() => CrockfordBase32.decode('T&ZQ')).toThrowError(
+        'Invalid base 32 character found in string: &',
+      );
+    });
   });
 });
