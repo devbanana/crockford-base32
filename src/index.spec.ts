@@ -14,6 +14,10 @@ describe('Base32Encoder', () => {
       expect(CrockfordBase32.encode(Buffer.from([0x74]))).toBe('EG');
     });
 
+    it('can encode two bytes', () => {
+      expect(CrockfordBase32.encode(Buffer.from([0x74, 0x74]))).toBe('EHT0');
+    });
+
     it('can encode a large number', () => {
       expect(
         CrockfordBase32.encode(Buffer.from('593f8759e8431f5f', 'hex')),
@@ -81,6 +85,10 @@ describe('Base32Encoder', () => {
 
     it('can decode a single byte', () => {
       expect(CrockfordBase32.decode('EG').toString()).toBe('t');
+    });
+
+    it('can decode two bytes', () => {
+      expect(CrockfordBase32.decode('EHT0').toString()).toBe('tt');
     });
 
     it('can decode a large number', () => {
