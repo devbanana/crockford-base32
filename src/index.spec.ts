@@ -11,27 +11,27 @@ describe('Base32Encoder', () => {
     });
 
     it('can encode a single byte', () => {
-      expect(CrockfordBase32.encode(Buffer.from([0x74]))).toBe('3M');
+      expect(CrockfordBase32.encode(Buffer.from([0x74]))).toBe('EG');
     });
 
     it('can encode a large number', () => {
       expect(
         CrockfordBase32.encode(Buffer.from('593f8759e8431f5f', 'hex')),
-      ).toBe('5JFW7B7M467TZ');
+      ).toBe('B4ZREPF88CFNY');
     });
 
     it('does not strip off leading zeros', () => {
-      expect(CrockfordBase32.encode(Buffer.from([0, 0, 0xa9]))).toBe('00059');
+      expect(CrockfordBase32.encode(Buffer.from([0, 0, 0xa9]))).toBe('000AJ');
     });
 
     it('can encode a number', () => {
-      expect(CrockfordBase32.encode(388_864)).toBe('BVR0');
+      expect(CrockfordBase32.encode(388_864)).toBe('0QQG0');
     });
 
     it('can encode a bigint', () => {
       expect(
         CrockfordBase32.encode(10_336_657_440_695_546_835_250_649_691n),
-      ).toBe('8B691DAR2GC0Q2466JV');
+      ).toBe('45K4GPNC1860BH2339DG');
     });
 
     it('cannot take a negative number', () => {
@@ -52,13 +52,13 @@ describe('Base32Encoder', () => {
         CrockfordBase32.encode(
           Buffer.from('017cb3b93bcb40b6147d7813c5ad2339', 'hex'),
         ),
-      ).toBe('01FJSVJEYB82V18ZBR2F2TT8SS');
+      ).toBe('05YB7E9VSD0BC53XF09WBB9374');
     });
 
     it("doesn't modify the input buffer", () => {
       const buffer = Buffer.from('test');
       // noinspection SpellCheckingInspection
-      expect(CrockfordBase32.encode(buffer)).toBe('1T6AWVM');
+      expect(CrockfordBase32.encode(buffer)).toBe('EHJQ6X0');
       expect(buffer.toString()).toBe('test');
     });
 
@@ -67,7 +67,7 @@ describe('Base32Encoder', () => {
         CrockfordBase32.encode(Buffer.from('0000a9', 'hex'), {
           stripLeadingZeros: true,
         }),
-      ).toBe('59');
+      ).toBe('AJ');
     });
   });
 

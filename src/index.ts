@@ -20,37 +20,32 @@ export class CrockfordBase32 {
     input: Buffer | number | bigint,
     options?: EncodeOptions,
   ): string {
-    let stripZeros = options?.stripLeadingZeros || false;
+    const stripZeros = options?.stripLeadingZeros || false;
 
     if (input instanceof Buffer) {
       // Copy the input buffer so it isn't modified when we call `reverse()`
       input = Buffer.from(input);
     } else {
       input = this.createBuffer(input);
-      stripZeros = true;
     }
 
     const output: number[] = [];
     let bitsRead = 0;
     let buffer = 0;
 
-    // Work from the end of the buffer
-    input.reverse();
-
     for (const byte of input) {
       // Add current byte to start of buffer
-      buffer |= byte << bitsRead;
+      buffer = (buffer << 8) | byte;
       bitsRead += 8;
 
       while (bitsRead >= 5) {
-        output.unshift(buffer & 0x1f);
-        buffer >>>= 5;
+        output.push((buffer >>> (bitsRead - 5)) & 0x1f);
         bitsRead -= 5;
       }
     }
 
     if (bitsRead > 0) {
-      output.unshift(buffer & 0x1f);
+      output.push((buffer << (5 - bitsRead)) & 0x1f);
     }
 
     let dataFound = false;
