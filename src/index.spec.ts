@@ -80,31 +80,27 @@ describe('Base32Encoder', () => {
     });
 
     it('can decode a single byte', () => {
-      expect(CrockfordBase32.decode('3M').toString()).toBe('t');
+      expect(CrockfordBase32.decode('EG').toString()).toBe('t');
     });
 
     it('can decode a large number', () => {
-      expect(CrockfordBase32.decode('5JFW7B7M467TZ').toString('hex')).toBe(
+      expect(CrockfordBase32.decode('B4ZREPF88CFNY').toString('hex')).toBe(
         '593f8759e8431f5f',
       );
     });
 
     it('keeps leading zeros when decoding', () => {
-      expect(CrockfordBase32.decode('00059').toString('hex')).toBe('0000a9');
-    });
-
-    it('pads to the next byte', () => {
-      expect(CrockfordBase32.decode('M3kV').toString('hex')).toBe('0a0e7b');
+      expect(CrockfordBase32.decode('000AJ').toString('hex')).toBe('0000a9');
     });
 
     it.each`
-      inputChar | translatedChar | input    | output
-      ${'I'}    | ${'1'}         | ${'AIm'} | ${'2834'}
-      ${'i'}    | ${'1'}         | ${'Aim'} | ${'2834'}
-      ${'L'}    | ${'1'}         | ${'ALm'} | ${'2834'}
-      ${'l'}    | ${'1'}         | ${'Alm'} | ${'2834'}
-      ${'O'}    | ${'0'}         | ${'AOm'} | ${'2814'}
-      ${'o'}    | ${'0'}         | ${'Aom'} | ${'2814'}
+      inputChar | translatedChar | input     | output
+      ${'I'}    | ${'1'}         | ${'AIm0'} | ${'5068'}
+      ${'i'}    | ${'1'}         | ${'Aim0'} | ${'5068'}
+      ${'L'}    | ${'1'}         | ${'ALm0'} | ${'5068'}
+      ${'l'}    | ${'1'}         | ${'Alm0'} | ${'5068'}
+      ${'O'}    | ${'0'}         | ${'AOM0'} | ${'5028'}
+      ${'o'}    | ${'0'}         | ${'AoM0'} | ${'5028'}
     `(
       'translates $inputChar to $translatedChar when decoding',
       ({ input, output }: { input: string; output: string }) => {
@@ -115,20 +111,24 @@ describe('Base32Encoder', () => {
     it('can decode a ULID', () => {
       // noinspection SpellCheckingInspection
       expect(
-        CrockfordBase32.decode('01FJSVJEYB82V18ZBR2F2TT8SS').toString('hex'),
+        CrockfordBase32.decode('05YB7E9VSD0BC53XF09WBB9374').toString('hex'),
       ).toBe('017cb3b93bcb40b6147d7813c5ad2339');
     });
 
     it('can strip leading zeros', () => {
       expect(
-        CrockfordBase32.decode('00059', { stripLeadingZeros: true }).toString(
+        CrockfordBase32.decode('000AJ', { stripLeadingZeros: true }).toString(
           'hex',
         ),
       ).toBe('a9');
     });
 
+    it('does not add up to a complete byte', () => {
+      expect(CrockfordBase32.decode('A1M').toString('hex')).toBe('5068');
+    });
+
     it('can return a number', () => {
-      expect(CrockfordBase32.decode('G3T', { asNumber: true })).toBe(16_506n);
+      expect(CrockfordBase32.decode('81X0', { asNumber: true })).toBe(16_506n);
     });
 
     it('rejects any invalid base 32 character', () => {
@@ -139,14 +139,14 @@ describe('Base32Encoder', () => {
 
     it('ignores hyphens', () => {
       // noinspection SpellCheckingInspection
-      expect(CrockfordBase32.decode('3KDXPP-A83KEH-S6JVK7').toString()).toBe(
+      expect(CrockfordBase32.decode('EDQPTS-90EDT7-4TBECW').toString()).toBe(
         'some string',
       );
     });
 
     it('ignores multiple adjacent hyphens', () => {
       // noinspection SpellCheckingInspection
-      expect(CrockfordBase32.decode('3KDXPP--A83KEH---S6JVK7').toString()).toBe(
+      expect(CrockfordBase32.decode('EDQPTS--90EDT7---4TBECW').toString()).toBe(
         'some string',
       );
     });

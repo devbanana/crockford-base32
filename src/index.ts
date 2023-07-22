@@ -72,9 +72,6 @@ export class CrockfordBase32 {
       .replace(/[IL]/g, '1')
       .replace(/-+/g, '');
 
-    // Work from the end
-    input = input.split('').reverse().join('');
-
     const output: number[] = [];
     let bitsRead = 0;
     let buffer = 0;
@@ -87,18 +84,19 @@ export class CrockfordBase32 {
         );
       }
 
-      buffer |= byte << bitsRead;
       bitsRead += 5;
 
-      while (bitsRead >= 8) {
-        output.unshift(buffer & 0xff);
-        buffer >>>= 8;
+      if (bitsRead >= 8) {
         bitsRead -= 8;
+        output.push(buffer | (byte >> bitsRead));
+        buffer = (byte << (8 - bitsRead)) & 0xff;
+      } else {
+        buffer |= byte << (8 - bitsRead);
       }
     }
 
-    if (bitsRead >= 5 || buffer > 0) {
-      output.unshift(buffer & 0xff);
+    if (buffer > 0) {
+      output.push(buffer);
     }
 
     if (options?.stripLeadingZeros === true) {
