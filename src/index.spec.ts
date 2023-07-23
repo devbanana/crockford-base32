@@ -65,14 +65,6 @@ describe('Base32Encoder', () => {
       expect(CrockfordBase32.encode(buffer)).toBe('EHJQ6X0');
       expect(buffer.toString()).toBe('test');
     });
-
-    it('can strip leading zeros', () => {
-      expect(
-        CrockfordBase32.encode(Buffer.from('0000a9', 'hex'), {
-          stripLeadingZeros: true,
-        }),
-      ).toBe('AJ');
-    });
   });
 
   describe('when decoding', () => {
@@ -121,14 +113,6 @@ describe('Base32Encoder', () => {
       expect(
         CrockfordBase32.decode('05YB7E9VSD0BC53XF09WBB9374').toString('hex'),
       ).toBe('017cb3b93bcb40b6147d7813c5ad2339');
-    });
-
-    it('can strip leading zeros', () => {
-      expect(
-        CrockfordBase32.decode('000AJ', { stripLeadingZeros: true }).toString(
-          'hex',
-        ),
-      ).toBe('a9');
     });
 
     it('does not add up to a complete byte', () => {

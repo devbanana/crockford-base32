@@ -3,12 +3,8 @@ import { Buffer } from 'buffer';
 // noinspection SpellCheckingInspection
 const characters = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
-interface EncodeOptions {
-  stripLeadingZeros?: boolean;
-}
-
-type DecodeAsNumberOptions = { asNumber: true } & EncodeOptions;
-type DecodeAsBufferOptions = { asNumber?: false } & EncodeOptions;
+type DecodeAsNumberOptions = { asNumber: true };
+type DecodeAsBufferOptions = { asNumber: false };
 
 /**
  * An implementation of the Crockford Base32 algorithm.
@@ -16,12 +12,7 @@ type DecodeAsBufferOptions = { asNumber?: false } & EncodeOptions;
  * Spec: https://www.crockford.com/base32.html
  */
 export class CrockfordBase32 {
-  static encode(
-    input: Buffer | number | bigint,
-    options?: EncodeOptions,
-  ): string {
-    const stripZeros = options?.stripLeadingZeros || false;
-
+  static encode(input: Buffer | number | bigint): string {
     if (input instanceof Buffer) {
       // Copy the input buffer so it isn't modified when we call `reverse()`
       input = Buffer.from(input);
@@ -48,13 +39,7 @@ export class CrockfordBase32 {
       output.push((buffer << (5 - bitsRead)) & 0x1f);
     }
 
-    let dataFound = false;
-    return output
-      .filter(byte =>
-        stripZeros && !dataFound && byte === 0 ? false : (dataFound = true),
-      )
-      .map(byte => characters.charAt(byte))
-      .join('');
+    return output.map(byte => characters.charAt(byte)).join('');
   }
 
   static decode(input: string, options: DecodeAsNumberOptions): bigint;
@@ -97,10 +82,6 @@ export class CrockfordBase32 {
 
     if (buffer > 0) {
       output.push(buffer);
-    }
-
-    if (options?.stripLeadingZeros === true) {
-      while (output[0] === 0) output.shift();
     }
 
     if (options?.asNumber === true) {
