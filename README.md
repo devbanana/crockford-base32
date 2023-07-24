@@ -13,40 +13,22 @@ npm install --save crockford-base32
 ```javascript
 const { CrockfordBase32 } = require('crockford-base32');
 
-CrockfordBase32.encode(Buffer.from('some string')); // 3KDXPPA83KEHS6JVK7
-CrockfordBase32.decode('3KDXPPA83KEHS6JVK7').toString(); // some string
-```
+CrockfordBase32.encode(Buffer.from('some string')); // EDQPTS90EDT74TBECW
+CrockfordBase32.decode('EDQPTS90EDT74TBECW').toString(); // some string
 
-## Encoding Options
+// It will ignore hyphens
+CrockfordBase32.decode('EDQPTS-90EDT7-4TBECW').toString(); // some string
 
-You can pass options to the `encode()` method to change how it performs the encoding:
+// It will convert the letters I and L to 1, and O to 0
+CrockfordBase32.decode('1P10E').toString('hex'); // 0d8207
+CrockfordBase32.decode('IPLOE').toString('hex'); // 0d8207
+CrockfordBase32.decode('iploe').toString('hex'); // 0d8207
 
-| Option            | Type      | Default | Description                                          |
-| ----------------- | --------- | ------- | ---------------------------------------------------- |
-| stripLeadingZeros | `boolean` | `false` | Returns the encoded string without any leading zeros |
+// Encode and decode a number
+CrockfordBase32.encode(822354); // 1J654
+CrockfordBase32.decode('1J654', { asNumber: true }); // 822354n
 
-### Example
-
-```javascript
-CrockfordBase32.encode(Buffer.from('\x00test')); // 01T6AWVM
-CrockfordBase32.encode(Buffer.from('\x00test'), { stripLeadingZeros: true }); // 1T6AWVM
-```
-
-## Decoding Options
-
-You can also pass options to `decode()` as follows:
-
-| Option            | Type      | Default | Description                                                                         |
-| ----------------- | --------- | ------- | ----------------------------------------------------------------------------------- |
-| stripLeadingZeros | `boolean` | `false` | Strips all zeros from the decoded string.                                           |
-| asNumber          | `boolean` | `false` | `true` to return the decoded output as a `bigint`, `false` to return as a `Buffer`. |
-
-##### Example
-
-```javascript
-CrockfordBase32.decode('01T6AWVM').toString(); // \x00test
-CrockfordBase32.decode('01T6AWVM', { stripLeadingZeros: true }).toString(); // test
-
-CrockfordBase32.decode('CSCW'); // <Buffer 06 65 9c>
-CrockfordBase32.decode('CSCW', { asNumber: true }); // 419228n
+// Or a bigint
+CrockfordBase32.encode(275_789_480_204_545_813_933_268_697_807_617_179_845n); // SXXHYC0JSN77K601AW3K31P0RM
+CrockfordBase32.decode('SXXHYC0JSN77K601AW3K31P0RM', { asNumber: true }); // 275789480204545813933268697807617179845n
 ```
