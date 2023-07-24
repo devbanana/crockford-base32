@@ -3,12 +3,8 @@ import { Buffer } from 'buffer';
 // noinspection SpellCheckingInspection
 const characters = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
-interface EncodeOptions {
-  stripLeadingZeros?: boolean;
-}
-
-type DecodeAsNumberOptions = { asNumber: true } & EncodeOptions;
-type DecodeAsBufferOptions = { asNumber?: false } & EncodeOptions;
+type DecodeAsNumberOptions = { asNumber: true };
+type DecodeAsBufferOptions = { asNumber: false };
 
 /**
  * An implementation of the Crockford Base32 algorithm.
@@ -16,50 +12,34 @@ type DecodeAsBufferOptions = { asNumber?: false } & EncodeOptions;
  * Spec: https://www.crockford.com/base32.html
  */
 export class CrockfordBase32 {
-  static encode(
-    input: Buffer | number | bigint,
-    options?: EncodeOptions,
-  ): string {
-    let stripZeros = options?.stripLeadingZeros || false;
-
+  static encode(input: Buffer | number | bigint): string {
     if (input instanceof Buffer) {
       // Copy the input buffer so it isn't modified when we call `reverse()`
       input = Buffer.from(input);
     } else {
       input = this.createBuffer(input);
-      stripZeros = true;
     }
 
     const output: number[] = [];
     let bitsRead = 0;
     let buffer = 0;
 
-    // Work from the end of the buffer
-    input.reverse();
-
     for (const byte of input) {
       // Add current byte to start of buffer
-      buffer |= byte << bitsRead;
+      buffer = (buffer << 8) | byte;
       bitsRead += 8;
 
       while (bitsRead >= 5) {
-        output.unshift(buffer & 0x1f);
-        buffer >>>= 5;
+        output.push((buffer >>> (bitsRead - 5)) & 0x1f);
         bitsRead -= 5;
       }
     }
 
     if (bitsRead > 0) {
-      output.unshift(buffer & 0x1f);
+      output.push((buffer << (5 - bitsRead)) & 0x1f);
     }
 
-    let dataFound = false;
-    return output
-      .filter(byte =>
-        stripZeros && !dataFound && byte === 0 ? false : (dataFound = true),
-      )
-      .map(byte => characters.charAt(byte))
-      .join('');
+    return output.map(byte => characters.charAt(byte)).join('');
   }
 
   static decode(input: string, options: DecodeAsNumberOptions): bigint;
@@ -77,9 +57,6 @@ export class CrockfordBase32 {
       .replace(/[IL]/g, '1')
       .replace(/-+/g, '');
 
-    // Work from the end
-    input = input.split('').reverse().join('');
-
     const output: number[] = [];
     let bitsRead = 0;
     let buffer = 0;
@@ -92,22 +69,19 @@ export class CrockfordBase32 {
         );
       }
 
-      buffer |= byte << bitsRead;
       bitsRead += 5;
 
-      while (bitsRead >= 8) {
-        output.unshift(buffer & 0xff);
-        buffer >>>= 8;
+      if (bitsRead >= 8) {
         bitsRead -= 8;
+        output.push(buffer | (byte >> bitsRead));
+        buffer = (byte << (8 - bitsRead)) & 0xff;
+      } else {
+        buffer |= byte << (8 - bitsRead);
       }
     }
 
-    if (bitsRead >= 5 || buffer > 0) {
-      output.unshift(buffer & 0xff);
-    }
-
-    if (options?.stripLeadingZeros === true) {
-      while (output[0] === 0) output.shift();
+    if (buffer > 0) {
+      output.push(buffer);
     }
 
     if (options?.asNumber === true) {
