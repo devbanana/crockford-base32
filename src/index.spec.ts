@@ -4,7 +4,6 @@ import { Buffer } from 'buffer';
 describe('Base32Encoder', () => {
   describe('when encoding', () => {
     it('can encode a multiple of 5 bits', () => {
-      // noinspection SpellCheckingInspection
       expect(
         CrockfordBase32.encode(Buffer.from([0xa6, 0xe5, 0x63, 0x34, 0x5f])),
       ).toBe('MVJP6D2Z');
@@ -51,7 +50,6 @@ describe('Base32Encoder', () => {
     });
 
     it('can encode a UUID into base 32', () => {
-      // noinspection SpellCheckingInspection
       expect(
         CrockfordBase32.encode(
           Buffer.from('017cb3b93bcb40b6147d7813c5ad2339', 'hex'),
@@ -61,15 +59,135 @@ describe('Base32Encoder', () => {
 
     it("doesn't modify the input buffer", () => {
       const buffer = Buffer.from('test');
-      // noinspection SpellCheckingInspection
       expect(CrockfordBase32.encode(buffer)).toBe('EHJQ6X0');
       expect(buffer.toString()).toBe('test');
     });
   });
 
+  describe('when encoding ULIDs', () => {
+    it('can encode', () => {
+      // Test that variant option is accepted and produces ULID-style output
+      // ULID uses modulo-based encoding (right-to-left, padding left)
+      // 0xFF = 255 in decimal
+      // Crockford: 11111|11100 -> ZW (pads right)
+      // ULID: 00111|11111 -> 7Z (pads left)
+      expect(
+        CrockfordBase32.encode(Buffer.from([0xff]), { variant: 'ulid' }),
+      ).toBe('7Z');
+    });
+
+    it('can encode zero', () => {
+      // 1-byte buffer: ceil(8/5) = 2 characters
+      expect(
+        CrockfordBase32.encode(Buffer.from([0x00]), { variant: 'ulid' }),
+      ).toBe('00');
+    });
+
+    it('can encode an empty buffer', () => {
+      expect(CrockfordBase32.encode(Buffer.from([]), { variant: 'ulid' })).toBe(
+        '',
+      );
+    });
+
+    it('can encode multiple zeros', () => {
+      // 3-byte all-zero buffer: ceil(24/5) = 5 characters
+      expect(
+        CrockfordBase32.encode(Buffer.from([0x00, 0x00, 0x00]), {
+          variant: 'ulid',
+        }),
+      ).toBe('00000');
+    });
+
+    it('can encode a number', () => {
+      // 255 should encode to '7Z' like Buffer.from([0xff])
+      expect(CrockfordBase32.encode(255, { variant: 'ulid' })).toBe('7Z');
+    });
+
+    it('can encode zero as a number', () => {
+      // Numeric zero has no bits to encode, so it produces an empty string
+      expect(CrockfordBase32.encode(0, { variant: 'ulid' })).toBe('');
+    });
+
+    it('can encode a bigint', () => {
+      expect(CrockfordBase32.encode(255n, { variant: 'ulid' })).toBe('7Z');
+    });
+
+    it('can encode zero as a bigint', () => {
+      expect(CrockfordBase32.encode(0n, { variant: 'ulid' })).toBe('');
+    });
+
+    it('can encode a real ULID', () => {
+      // The ULID from issue #4: 01FZD39998855SS2YG4XP4T14P
+      expect(
+        CrockfordBase32.encode(
+          Buffer.from('017fda34a528414b9c8bd0276c4d0496', 'hex'),
+          { variant: 'ulid' },
+        ),
+      ).toBe('01FZD39998855SS2YG4XP4T14P');
+    });
+
+    it('pads encoding for values with leading zeros - 16 bytes', () => {
+      // 16-byte buffer starting with 0x00 should pad to 26 characters
+      const result = CrockfordBase32.encode(
+        Buffer.from('00ffffffffffffffffffffffffffffff', 'hex'),
+        { variant: 'ulid' },
+      );
+      expect(result.length).toBe(26);
+      expect(result[0]).toBe('0'); // Should have leading zero
+    });
+
+    it('pads encoding for values with multiple leading zeros - 16 bytes', () => {
+      // 16-byte buffer with multiple leading zeros
+      const result = CrockfordBase32.encode(
+        Buffer.from('00000000000000000000000000000001', 'hex'),
+        { variant: 'ulid' },
+      );
+      expect(result).toBe('00000000000000000000000001');
+      expect(result.length).toBe(26);
+    });
+
+    it('pads encoding correctly for smaller buffers - 8 bytes', () => {
+      // 8-byte buffer: ceil(64/5) = 13 characters
+      const result = CrockfordBase32.encode(
+        Buffer.from('00ffffffffffffff', 'hex'),
+        { variant: 'ulid' },
+      );
+      expect(result.length).toBe(13);
+      expect(result[0]).toBe('0'); // Should have leading zero
+    });
+
+    it('pads encoding correctly for smaller buffers - 10 bytes', () => {
+      // 10-byte buffer: ceil(80/5) = 16 characters
+      const result = CrockfordBase32.encode(
+        Buffer.from('00ffffffffffffffffff', 'hex'),
+        { variant: 'ulid' },
+      );
+      expect(result.length).toBe(16);
+      expect(result[0]).toBe('0'); // Should have leading zero
+    });
+
+    it('pads encoding for all-zero buffer', () => {
+      // 2-byte all-zero buffer: ceil(16/5) = 4 characters
+      const result = CrockfordBase32.encode(Buffer.from([0x00, 0x00]), {
+        variant: 'ulid',
+      });
+      expect(result).toBe('0000');
+      expect(result.length).toBe(4);
+    });
+
+    it('pads encoding for 16-byte all-zero buffer', () => {
+      // 16-byte all-zero buffer: ceil(128/5) = 26 characters
+      const result = CrockfordBase32.encode(
+        Buffer.from('00000000000000000000000000000000', 'hex'),
+        { variant: 'ulid' },
+      );
+      expect(result).toBe('00000000000000000000000000');
+      expect(result.length).toBe(26);
+    });
+  });
+
   describe('when decoding', () => {
     it('can decode a multiple of 5 bits', () => {
-      // noinspection SpellCheckingInspection
       expect(CrockfordBase32.decode('MVJP6D2Z').toString('hex')).toBe(
         'a6e563345f',
       );
@@ -109,7 +227,6 @@ describe('Base32Encoder', () => {
     );
 
     it('can decode a ULID', () => {
-      // noinspection SpellCheckingInspection
       expect(
         CrockfordBase32.decode('05YB7E9VSD0BC53XF09WBB9374').toString('hex'),
       ).toBe('017cb3b93bcb40b6147d7813c5ad2339');
@@ -130,17 +247,182 @@ describe('Base32Encoder', () => {
     });
 
     it('ignores hyphens', () => {
-      // noinspection SpellCheckingInspection
       expect(CrockfordBase32.decode('EDQPTS-90EDT7-4TBECW').toString()).toBe(
         'some string',
       );
     });
 
     it('ignores multiple adjacent hyphens', () => {
-      // noinspection SpellCheckingInspection
       expect(CrockfordBase32.decode('EDQPTS--90EDT7---4TBECW').toString()).toBe(
         'some string',
       );
+    });
+  });
+
+  describe('when decoding ULIDs', () => {
+    it('can decode', () => {
+      // Test round-trip: encoding should decode back correctly
+      // '7Z' should decode back to Buffer.from([0xff])
+      const result = CrockfordBase32.decode('7Z', { variant: 'ulid' });
+      expect(result.toString('hex')).toBe('ff');
+    });
+
+    it('can decode zero', () => {
+      const result = CrockfordBase32.decode('0', { variant: 'ulid' });
+      expect(result.toString('hex')).toBe('00');
+    });
+
+    it('can decode an empty string', () => {
+      const result = CrockfordBase32.decode('', { variant: 'ulid' });
+      expect(result.length).toBe(0);
+      expect(result.toString('hex')).toBe('');
+    });
+
+    it('can decode as number', () => {
+      const result = CrockfordBase32.decode('7Z', {
+        variant: 'ulid',
+        asNumber: true,
+      });
+      expect(result).toBe(255n);
+    });
+
+    it('can decode an empty string as a number', () => {
+      const result = CrockfordBase32.decode('', {
+        variant: 'ulid',
+        asNumber: true,
+      });
+      expect(result).toBe(0n);
+    });
+
+    it('rejects invalid base 32 character', () => {
+      expect(() => {
+        CrockfordBase32.decode('Z$Z', { variant: 'ulid' });
+      }).toThrow('Invalid base 32 character found in string: $');
+    });
+
+    it('can decode a real ULID', () => {
+      // The ULID from issue #4: 01FZD39998855SS2YG4XP4T14P
+      expect(
+        CrockfordBase32.decode('01FZD39998855SS2YG4XP4T14P', {
+          variant: 'ulid',
+        }).toString('hex'),
+      ).toBe('017fda34a528414b9c8bd0276c4d0496');
+    });
+
+    it('translates I to 1', () => {
+      expect(
+        CrockfordBase32.decode('7I', { variant: 'ulid' }).toString('hex'),
+      ).toBe('e1');
+    });
+
+    it('translates L to 1', () => {
+      expect(
+        CrockfordBase32.decode('7L', { variant: 'ulid' }).toString('hex'),
+      ).toBe('e1');
+    });
+
+    it('translates O to 0', () => {
+      expect(
+        CrockfordBase32.decode('7O', { variant: 'ulid' }).toString('hex'),
+      ).toBe('e0');
+    });
+
+    it('ignores hyphens', () => {
+      expect(
+        CrockfordBase32.decode('01FZD399-98855SS2-YG4XP4T14P', {
+          variant: 'ulid',
+        }).toString('hex'),
+      ).toBe('017fda34a528414b9c8bd0276c4d0496');
+    });
+
+    it('can decode all-zero string - 4 characters', () => {
+      // 4 zeros: floor(4*5/8) = floor(2.5) = 2 bytes
+      const result = CrockfordBase32.decode('0000', { variant: 'ulid' });
+      expect(result.toString('hex')).toBe('0000');
+    });
+
+    it('can decode all-zero string - 26 characters', () => {
+      // 26 zeros: floor(26*5/8) = floor(16.25) = 16 bytes
+      const result = CrockfordBase32.decode('00000000000000000000000000', {
+        variant: 'ulid',
+      });
+      expect(result.toString('hex')).toBe('00000000000000000000000000000000');
+    });
+
+    it('can decode max value (all 0xFF)', () => {
+      // Maximum 16-byte value: all FFs
+      const maxEncoded = CrockfordBase32.encode(
+        Buffer.from('ffffffffffffffffffffffffffffffff', 'hex'),
+        { variant: 'ulid' },
+      );
+      const decoded = CrockfordBase32.decode(maxEncoded, { variant: 'ulid' });
+      expect(decoded.toString('hex')).toBe('ffffffffffffffffffffffffffffffff');
+    });
+  });
+
+  describe('when round-tripping ULIDs', () => {
+    it('can round-trip with leading zeros', () => {
+      const original = Buffer.from('007fda34a528414b9c8bd0276c4d0496', 'hex');
+      const encoded = CrockfordBase32.encode(original, { variant: 'ulid' });
+      const decoded = CrockfordBase32.decode(encoded, { variant: 'ulid' });
+      expect(decoded.toString('hex')).toBe('007fda34a528414b9c8bd0276c4d0496');
+    });
+
+    it('can round-trip with many leading zeros', () => {
+      const original = Buffer.from('00000000000000001234567890abcdef', 'hex');
+      const encoded = CrockfordBase32.encode(original, { variant: 'ulid' });
+      const decoded = CrockfordBase32.decode(encoded, { variant: 'ulid' });
+      expect(decoded.toString('hex')).toBe('00000000000000001234567890abcdef');
+    });
+
+    it('can round-trip all-zero buffer', () => {
+      const original = Buffer.from([0x00, 0x00]);
+      const encoded = CrockfordBase32.encode(original, { variant: 'ulid' });
+      const decoded = CrockfordBase32.decode(encoded, { variant: 'ulid' });
+      expect(decoded.toString('hex')).toBe('0000');
+    });
+
+    it('can round-trip an empty buffer', () => {
+      const original = Buffer.from([]);
+      const encoded = CrockfordBase32.encode(original, { variant: 'ulid' });
+      const decoded = CrockfordBase32.decode(encoded, { variant: 'ulid' });
+      expect(encoded).toBe('');
+      expect(decoded.length).toBe(0);
+    });
+
+    it('can round-trip 16-byte all-zero buffer', () => {
+      // All-zero 16-byte buffer (like a zeroed ULID)
+      const original = Buffer.from('00000000000000000000000000000000', 'hex');
+      const encoded = CrockfordBase32.encode(original, { variant: 'ulid' });
+      const decoded = CrockfordBase32.decode(encoded, { variant: 'ulid' });
+      expect(decoded.toString('hex')).toBe('00000000000000000000000000000000');
+    });
+
+    it('can round-trip a number', () => {
+      const original = 123_456_789n;
+      const encoded = CrockfordBase32.encode(original, { variant: 'ulid' });
+      const decoded = CrockfordBase32.decode(encoded, {
+        variant: 'ulid',
+        asNumber: true,
+      });
+      expect(decoded).toBe(original);
+    });
+
+    it('can round-trip a bigint', () => {
+      const original = 10_336_657_440_695_546_835_250_649_691n;
+      const encoded = CrockfordBase32.encode(original, { variant: 'ulid' });
+      const decoded = CrockfordBase32.decode(encoded, {
+        variant: 'ulid',
+        asNumber: true,
+      });
+      expect(decoded).toBe(original);
+    });
+
+    it('can round-trip max value (all 0xFF)', () => {
+      const original = Buffer.from('ffffffffffffffffffffffffffffffff', 'hex');
+      const encoded = CrockfordBase32.encode(original, { variant: 'ulid' });
+      const decoded = CrockfordBase32.decode(encoded, { variant: 'ulid' });
+      expect(decoded.toString('hex')).toBe('ffffffffffffffffffffffffffffffff');
     });
   });
 });

@@ -32,3 +32,59 @@ CrockfordBase32.decode('1J654', { asNumber: true }); // 822354n
 CrockfordBase32.encode(275_789_480_204_545_813_933_268_697_807_617_179_845n); // SXXHYC0JSN77K601AW3K31P0RM
 CrockfordBase32.decode('SXXHYC0JSN77K601AW3K31P0RM', { asNumber: true }); // 275789480204545813933268697807617179845n
 ```
+
+## Variants
+
+The default `crockford` variant follows Douglas Crockford's Base 32
+algorithm. It treats binary input as a bit stream, reading from left to right
+and padding remaining bits on the right.
+
+The `ulid` variant uses ULID-compatible modulo-style encoding and decoding. It
+treats the input as one integer, extracts base 32 digits with division and
+remainder, and pads on the left. The [ULID spec][ulid-spec] only fixes the
+alphabet; the modulo algorithm comes from the reference implementation's
+[`encodeTime`][ulid-encode] function. For background on the two valid Base 32
+interpretations ([RFC 4648][rfc-4648] vs. modulo), see [this
+discussion][ulid-discussion].
+
+[ulid-spec]: https://github.com/ulid/spec
+[ulid-encode]: https://github.com/ulid/javascript/blob/master/lib/index.ts
+[ulid-discussion]: https://github.com/ulid/spec/issues/73#issuecomment-1247445322
+[rfc-4648]: https://www.rfc-editor.org/rfc/rfc4648
+
+```javascript
+const { CrockfordBase32 } = require('crockford-base32');
+
+CrockfordBase32.encode(Buffer.from([0xff])); // ZW
+CrockfordBase32.encode(Buffer.from([0xff]), { variant: 'ulid' }); // 7Z
+
+CrockfordBase32.decode('01FZD39998855SS2YG4XP4T14P', {
+  variant: 'ulid',
+}).toString('hex'); // 017fda34a528414b9c8bd0276c4d0496
+
+CrockfordBase32.decode('7Z', {
+  variant: 'ulid',
+  asNumber: true,
+}); // 255n
+```
+
+The `ulid` variant only selects the ULID-compatible encoding algorithm. It does
+not validate that input is a valid ULID, require 16-byte buffers or
+26-character strings, generate ULIDs, validate timestamps, or enforce ULID
+overflow rules.
+
+Empty binary input and numeric zero both encode to the empty string, since
+neither has any bits to encode:
+
+```javascript
+CrockfordBase32.encode(Buffer.from([]), { variant: 'ulid' }); // ""
+CrockfordBase32.decode('', { variant: 'ulid' }).length; // 0
+CrockfordBase32.encode(0, { variant: 'ulid' }); // ""
+```
+
+### Migrating from 1.x
+
+Version 2.0.0 changed the encoding algorithm to read from the leftmost bit per
+the Crockford spec. If you were using this library to decode ULIDs and saw
+different output after upgrading, pass `{ variant: 'ulid' }` to restore the
+previous behaviour for ULID-encoded data.
