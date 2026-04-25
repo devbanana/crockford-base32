@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `variant` option on `encode()` and `decode()` for selecting the encoding
+  algorithm. The default `crockford` variant is unchanged. The new `ulid`
+  variant uses the ULID-compatible modulo-style algorithm, restoring the
+  encoding/decoding behaviour expected by ULID consumers that broke in 2.0.0.
+
+### Changed
+
+- `decode()`'s `asNumber: false` option is now optional, so passing only
+  `{ variant: 'ulid' }` type-checks without also specifying `asNumber`.
+
 ## [2.0.0]: 2023-07-24
 
 ### Fixed
@@ -43,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to encode a number to base 32
 - Ability to decode a base 32 string to a buffer
 
+[Unreleased]: https://github.com/devbanana/crockford-base32/compare/2.0.0...HEAD
 [2.0.0]: https://github.com/devbanana/crockford-base32/compare/1.1.0...2.0.0
 [1.1.0]: https://github.com/devbanana/crockford-base32/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/devbanana/crockford-base32/compare/1.0.0...1.0.1
