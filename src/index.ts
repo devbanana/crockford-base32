@@ -1,6 +1,5 @@
 import { Buffer } from 'buffer';
 
-// noinspection SpellCheckingInspection
 const characters = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 type EncodeOptions = { variant?: 'crockford' | 'ulid' };
@@ -110,6 +109,11 @@ export class CrockfordBase32 {
   }
 
   private static encodeUlid(input: Buffer): string {
+    // Keep empty binary input empty so Buffer round-trips do not become 0x00.
+    if (input.length === 0) {
+      return '';
+    }
+
     // ULID variant uses modulo-based encoding (right-to-left, padding left)
     // Convert buffer to bigint
     let value = 0n;
@@ -125,15 +129,11 @@ export class CrockfordBase32 {
       value /= 32n;
     }
 
-    // Keep empty binary input empty so Buffer round-trips do not become 0x00.
-    if (input.length === 0) {
-      return '';
-    }
-
     // Pad to the expected length based on input size
-    // Each byte requires ceil(8/5) = 2 base32 characters on average
-    // For n bytes: ceil(n * 8 / 5) characters
+    // Each base32 character encodes 5 bits, so n bytes = n*8 bits
+    // require ceil(n*8/5) characters
     const expectedLength = Math.ceil((input.length * 8) / 5);
+
     return output.join('').padStart(expectedLength, '0');
   }
 
