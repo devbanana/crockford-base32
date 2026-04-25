@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `decode()`'s `asNumber: false` option is now optional, so passing only
   `{ variant: 'ulid' }` type-checks without also specifying `asNumber`.
 
+### Fixed
+
+- `decode()` no longer drops a trailing all-zero partial byte, so
+  non-canonical inputs like `'0'` and `'000'` decode without losing a byte.
+
 ## [2.0.0]: 2023-07-24
 
 ### Fixed
