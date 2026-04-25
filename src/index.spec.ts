@@ -236,6 +236,25 @@ describe('Base32Encoder', () => {
       expect(CrockfordBase32.decode('A1M').toString('hex')).toBe('5068');
     });
 
+    it('decodes a single zero character to a zero byte', () => {
+      expect(CrockfordBase32.decode('0').toString('hex')).toBe('00');
+    });
+
+    it('decodes a single non-zero character to a padded byte', () => {
+      expect(CrockfordBase32.decode('1').toString('hex')).toBe('08');
+    });
+
+    it('preserves non-zero trailing bits in non-canonical input', () => {
+      expect(CrockfordBase32.decode('01').toString('hex')).toBe('0040');
+    });
+
+    it('decodes an all-zero non-canonical input without dropping the trailing zero byte', () => {
+      // 3 chars * 5 bits = 15 bits: one byte from the inner loop plus 7 trailing
+      // bits that should flush as a second zero byte. The previous check
+      // (buffer > 0) skipped this flush because the bits happened to be zero.
+      expect(CrockfordBase32.decode('000').toString('hex')).toBe('0000');
+    });
+
     it('can return a number', () => {
       expect(CrockfordBase32.decode('81X0', { asNumber: true })).toBe(16_506n);
     });

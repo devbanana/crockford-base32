@@ -97,7 +97,10 @@ export class CrockfordBase32 {
       }
     }
 
-    if (buffer > 0) {
+    // Flush a trailing partial byte when it carries data: either bits are
+    // non-zero, or a whole character (>= 5 bits) went unpaired and so cannot
+    // be canonical zero padding.
+    if (buffer > 0 || bitsRead >= 5) {
       output.push(buffer);
     }
 
