@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-04-25
+
 ### Added
 
 - `variant` option on `encode()` and `decode()` for selecting the encoding
@@ -62,7 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to encode a number to base 32
 - Ability to decode a base 32 string to a buffer
 
-[Unreleased]: https://github.com/devbanana/crockford-base32/compare/2.0.0...HEAD
+[Unreleased]: https://github.com/devbanana/crockford-base32/compare/2.1.0...HEAD
+[2.1.0]: https://github.com/devbanana/crockford-base32/compare/2.0.0...2.1.0
 [2.0.0]: https://github.com/devbanana/crockford-base32/compare/1.1.0...2.0.0
 [1.1.0]: https://github.com/devbanana/crockford-base32/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/devbanana/crockford-base32/compare/1.0.0...1.0.1
