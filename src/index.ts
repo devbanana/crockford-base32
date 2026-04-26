@@ -3,14 +3,27 @@ import { Buffer } from 'buffer';
 const characters = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const checksumCharacters = '*~$=U';
 
-type EncodeOptions =
+type VariantWithChecksum =
   | { variant?: 'crockford'; checksum?: boolean }
   | { variant: 'ulid'; checksum?: never };
-type DecodeAsNumberOptions = { asNumber: true; variant?: 'crockford' | 'ulid' };
-type DecodeAsBufferOptions = {
-  asNumber?: false;
-  variant?: 'crockford' | 'ulid';
-};
+
+type EncodeOptions = VariantWithChecksum;
+type DecodeAsNumberOptions = { asNumber: true } & VariantWithChecksum;
+type DecodeAsBufferOptions = { asNumber?: false } & VariantWithChecksum;
+
+export class InvalidChecksumCharacterError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidChecksumCharacterError';
+  }
+}
+
+export class InvalidChecksumError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidChecksumError';
+  }
+}
 
 /**
  * An implementation of the Crockford Base32 algorithm.
@@ -66,12 +79,12 @@ export class CrockfordBase32 {
     return result;
   }
 
-  private static computeChecksum(input: Buffer): string {
+  private static computeChecksum(bytes: Iterable<number>): string {
     // Crockford's check symbol is value mod 37, where value is the number the
     // symbols represent. Fold byte-by-byte to avoid materializing a bigint;
     // acc stays < 37 so (acc * 256 + byte) fits comfortably in a JS number.
     let acc = 0;
-    for (const byte of input) {
+    for (const byte of bytes) {
       acc = (acc * 256 + byte) % 37;
     }
 
@@ -94,9 +107,32 @@ export class CrockfordBase32 {
       .replace(/-+/g, '');
 
     const variant = options?.variant ?? 'crockford';
+    const checksum = options?.checksum ?? false;
 
     if (variant === 'ulid') {
+      if (checksum) {
+        throw new Error('Checksums are not supported with the ulid variant');
+      }
       return this.decodeUlid(input, options);
+    }
+
+    let providedCheck: string | null = null;
+    if (checksum) {
+      if (input.length === 0) {
+        throw new InvalidChecksumCharacterError(
+          'Cannot validate checksum: input is empty',
+        );
+      }
+
+      const last = input.charAt(input.length - 1);
+      if ((characters + checksumCharacters).indexOf(last) === -1) {
+        throw new InvalidChecksumCharacterError(
+          `Invalid checksum character: ${last}`,
+        );
+      }
+
+      providedCheck = last;
+      input = input.slice(0, -1);
     }
 
     const output: number[] = [];
@@ -127,6 +163,15 @@ export class CrockfordBase32 {
     // be canonical zero padding.
     if (buffer > 0 || bitsRead >= 5) {
       output.push(buffer);
+    }
+
+    if (providedCheck !== null) {
+      const computedCheck = this.computeChecksum(output);
+      if (providedCheck !== computedCheck) {
+        throw new InvalidChecksumError(
+          `Checksum mismatch: expected '${computedCheck}' but found '${providedCheck}'`,
+        );
+      }
     }
 
     if (options?.asNumber === true) {

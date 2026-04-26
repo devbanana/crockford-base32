@@ -1,4 +1,8 @@
-import { CrockfordBase32 } from './index';
+import {
+  CrockfordBase32,
+  InvalidChecksumCharacterError,
+  InvalidChecksumError,
+} from './index';
 import { Buffer } from 'buffer';
 
 describe('Base32Encoder', () => {
@@ -362,6 +366,164 @@ describe('Base32Encoder', () => {
       expect(CrockfordBase32.decode('EDQPTS--90EDT7---4TBECW').toString()).toBe(
         'some string',
       );
+    });
+  });
+
+  describe('when decoding with a checksum', () => {
+    it('round-trips a single byte', () => {
+      // 0xff encodes to 'ZW~' with checksum
+      expect(
+        CrockfordBase32.decode('ZW~', { checksum: true }).toString('hex'),
+      ).toBe('ff');
+    });
+
+    it('decodes a multi-byte value with checksum', () => {
+      expect(
+        CrockfordBase32.decode('MVJP6D2ZV', { checksum: true }).toString('hex'),
+      ).toBe('a6e563345f');
+    });
+
+    it('decodes a value with leading zeros', () => {
+      // Buffer.from([0, 0, 0xa9]) -> '000AJ', checksum = 0xa9 % 37 = 21 -> 'N'
+      expect(
+        CrockfordBase32.decode('000AJN', { checksum: true }).toString('hex'),
+      ).toBe('0000a9');
+    });
+
+    it('decodes "test" with checksum', () => {
+      expect(
+        CrockfordBase32.decode('EHJQ6X0V', { checksum: true }).toString(),
+      ).toBe('test');
+    });
+
+    it('returns a number when asNumber is true', () => {
+      expect(
+        CrockfordBase32.decode('ZW~', { checksum: true, asNumber: true }),
+      ).toBe(255n);
+    });
+
+    it('decodes "0" (empty data + zero checksum) to an empty buffer', () => {
+      const result = CrockfordBase32.decode('0', { checksum: true });
+      expect(result.length).toBe(0);
+    });
+
+    it('decodes "0" as 0n when asNumber is true', () => {
+      expect(
+        CrockfordBase32.decode('0', { checksum: true, asNumber: true }),
+      ).toBe(0n);
+    });
+
+    it('strips hyphens before validating the checksum', () => {
+      expect(
+        CrockfordBase32.decode('EHJQ6X-0V', { checksum: true }).toString(),
+      ).toBe('test');
+    });
+
+    it('accepts a lowercase check symbol', () => {
+      // 0x24 encodes to '4GU'; lowercase 'u' should normalize to 'U'
+      expect(
+        CrockfordBase32.decode('4Gu', { checksum: true }).toString('hex'),
+      ).toBe('24');
+    });
+
+    it.each`
+      byte    | char
+      ${0x20} | ${'*'}
+      ${0x21} | ${'~'}
+      ${0x22} | ${'$'}
+      ${0x23} | ${'='}
+      ${0x24} | ${'U'}
+    `(
+      'accepts extended check character $char',
+      ({ byte, char }: { byte: number; char: string }) => {
+        const encoded = CrockfordBase32.encode(Buffer.from([byte]), {
+          checksum: true,
+        });
+        expect(encoded.endsWith(char)).toBe(true);
+        const decoded = CrockfordBase32.decode(encoded, { checksum: true });
+        expect(decoded.toString('hex')).toBe(
+          byte.toString(16).padStart(2, '0'),
+        );
+      },
+    );
+
+    it('still applies I/L/O substitution to the data portion', () => {
+      // 'AIm0' decodes to bytes [0x50, 0x68]; their checksum folds to 'C'
+      expect(
+        CrockfordBase32.decode('AIm0C', { checksum: true }).toString('hex'),
+      ).toBe('5068');
+    });
+
+    it('throws InvalidChecksumCharacterError on empty input', () => {
+      expect(() => CrockfordBase32.decode('', { checksum: true })).toThrow(
+        InvalidChecksumCharacterError,
+      );
+    });
+
+    it('throws InvalidChecksumCharacterError on invalid trailing character', () => {
+      expect(() => CrockfordBase32.decode('ZW!', { checksum: true })).toThrow(
+        InvalidChecksumCharacterError,
+      );
+    });
+
+    it('auto-corrects I to 1 in the check symbol position', () => {
+      // Buffer.from([1]) encodes to '04' with checksum '1'; typing 'I' for
+      // '1' at the end should still validate after I->1 normalization.
+      expect(
+        CrockfordBase32.decode('04I', { checksum: true }).toString('hex'),
+      ).toBe('01');
+    });
+
+    it('auto-corrects L to 1 in the check symbol position', () => {
+      expect(
+        CrockfordBase32.decode('04L', { checksum: true }).toString('hex'),
+      ).toBe('01');
+    });
+
+    it('auto-corrects O to 0 in the check symbol position', () => {
+      // Empty buffer encodes to '0' with checksum '0'; typing 'O' for '0'
+      // at the end should still validate after O->0 normalization.
+      expect(CrockfordBase32.decode('O', { checksum: true }).length).toBe(0);
+    });
+
+    it('throws InvalidChecksumError on a mismatched checksum', () => {
+      // 0xff's correct checksum is '~'; '0' is wrong
+      expect(() => CrockfordBase32.decode('ZW0', { checksum: true })).toThrow(
+        InvalidChecksumError,
+      );
+    });
+
+    it('rejects U in the data portion when checksum is enabled', () => {
+      // The check symbol is the LAST char only; an earlier U is still invalid
+      expect(() => CrockfordBase32.decode('UA0', { checksum: true })).toThrow(
+        'Invalid base 32 character found in string: U',
+      );
+    });
+
+    it('does not validate a checksum when option is omitted', () => {
+      // Without checksum: true, '~' is just an invalid base32 character
+      expect(() => CrockfordBase32.decode('ZW~')).toThrow(
+        'Invalid base 32 character',
+      );
+    });
+
+    it('rejects checksum: true with the ulid variant at runtime', () => {
+      expect(() =>
+        // @ts-expect-error - the type system should reject this combination
+        CrockfordBase32.decode('ZW~', {
+          variant: 'ulid',
+          checksum: true,
+        }),
+      ).toThrowError('Checksums are not supported with the ulid variant');
+    });
+
+    it('exports error classes that extend Error and have proper names', () => {
+      const charErr = new InvalidChecksumCharacterError('msg');
+      const sumErr = new InvalidChecksumError('msg');
+      expect(charErr).toBeInstanceOf(Error);
+      expect(sumErr).toBeInstanceOf(Error);
+      expect(charErr.name).toBe('InvalidChecksumCharacterError');
+      expect(sumErr.name).toBe('InvalidChecksumError');
     });
   });
 
