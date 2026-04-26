@@ -1,8 +1,11 @@
 import { Buffer } from 'buffer';
 
 const characters = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const checksumCharacters = '*~$=U';
 
-type EncodeOptions = { variant?: 'crockford' | 'ulid' };
+type EncodeOptions =
+  | { variant?: 'crockford'; checksum?: boolean }
+  | { variant: 'ulid'; checksum?: never };
 type DecodeAsNumberOptions = { asNumber: true; variant?: 'crockford' | 'ulid' };
 type DecodeAsBufferOptions = {
   asNumber?: false;
@@ -26,8 +29,12 @@ export class CrockfordBase32 {
     }
 
     const variant = options?.variant ?? 'crockford';
+    const checksum = options?.checksum ?? false;
 
     if (variant === 'ulid') {
+      if (checksum) {
+        throw new Error('Checksums are not supported with the ulid variant');
+      }
       return this.encodeUlid(input);
     }
 
@@ -50,7 +57,25 @@ export class CrockfordBase32 {
       output.push((buffer << (5 - bitsRead)) & 0x1f);
     }
 
-    return output.map(byte => characters.charAt(byte)).join('');
+    let result = output.map(byte => characters.charAt(byte)).join('');
+
+    if (checksum) {
+      result += this.computeChecksum(input);
+    }
+
+    return result;
+  }
+
+  private static computeChecksum(input: Buffer): string {
+    // Crockford's check symbol is value mod 37, where value is the number the
+    // symbols represent. Fold byte-by-byte to avoid materializing a bigint;
+    // acc stays < 37 so (acc * 256 + byte) fits comfortably in a JS number.
+    let acc = 0;
+    for (const byte of input) {
+      acc = (acc * 256 + byte) % 37;
+    }
+
+    return (characters + checksumCharacters).charAt(acc);
   }
 
   static decode(input: string, options: DecodeAsNumberOptions): bigint;

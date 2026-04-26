@@ -64,6 +64,93 @@ describe('Base32Encoder', () => {
     });
   });
 
+  describe('when encoding with a checksum', () => {
+    it('appends a single check symbol', () => {
+      // 0xff = 255, encoded as 'ZW'; 255 % 37 = 33 -> '~'
+      expect(
+        CrockfordBase32.encode(Buffer.from([0xff]), { checksum: true }),
+      ).toBe('ZW~');
+    });
+
+    it('computes the checksum from the numeric value, not the encoded chars', () => {
+      // 0xa6e563345f as a bigint mod 37 = 27, characters[27] = 'V'
+      expect(
+        CrockfordBase32.encode(Buffer.from([0xa6, 0xe5, 0x63, 0x34, 0x5f]), {
+          checksum: true,
+        }),
+      ).toBe('MVJP6D2ZV');
+    });
+
+    it('can encode a number with checksum', () => {
+      // 1 % 37 = 1 -> '1'; encode(1) is '04'
+      expect(CrockfordBase32.encode(1, { checksum: true })).toBe('041');
+    });
+
+    it('can encode a bigint with checksum', () => {
+      // 255n % 37 = 33 -> '~'; encode(255n) is 'ZW'
+      expect(CrockfordBase32.encode(255n, { checksum: true })).toBe('ZW~');
+    });
+
+    it('produces a "0" check symbol when input is the number zero', () => {
+      // encode(0) is ''; 0 % 37 = 0 -> '0'
+      expect(CrockfordBase32.encode(0, { checksum: true })).toBe('0');
+    });
+
+    it('produces a "0" check symbol for an empty buffer', () => {
+      expect(CrockfordBase32.encode(Buffer.from([]), { checksum: true })).toBe(
+        '0',
+      );
+    });
+
+    it.each`
+      byte    | char
+      ${0x20} | ${'*'}
+      ${0x21} | ${'~'}
+      ${0x22} | ${'$'}
+      ${0x23} | ${'='}
+      ${0x24} | ${'U'}
+    `(
+      'can produce extended check character $char',
+      ({ byte, char }: { byte: number; char: string }) => {
+        const result = CrockfordBase32.encode(Buffer.from([byte]), {
+          checksum: true,
+        });
+        expect(result.charAt(result.length - 1)).toBe(char);
+      },
+    );
+
+    it('does not append a checksum when checksum option is false', () => {
+      expect(
+        CrockfordBase32.encode(Buffer.from([0xff]), { checksum: false }),
+      ).toBe('ZW');
+    });
+
+    it('does not append a checksum when checksum option is omitted', () => {
+      expect(
+        CrockfordBase32.encode(Buffer.from([0xff]), { variant: 'crockford' }),
+      ).toBe('ZW');
+    });
+
+    it("doesn't modify the input buffer", () => {
+      // 'test' = 0x74 0x65 0x73 0x74; folded mod 37 = 27 -> 'V'
+      const buffer = Buffer.from('test');
+      expect(CrockfordBase32.encode(buffer, { checksum: true })).toBe(
+        'EHJQ6X0V',
+      );
+      expect(buffer.toString()).toBe('test');
+    });
+
+    it('rejects checksum: true with the ulid variant at runtime', () => {
+      expect(() =>
+        CrockfordBase32.encode(Buffer.from([0xff]), {
+          variant: 'ulid',
+          // @ts-expect-error - the type system should reject this combination
+          checksum: true,
+        }),
+      ).toThrowError('Checksums are not supported with the ulid variant');
+    });
+  });
+
   describe('when encoding ULIDs', () => {
     it('can encode', () => {
       // Test that variant option is accepted and produces ULID-style output
