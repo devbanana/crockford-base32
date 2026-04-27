@@ -1,6 +1,6 @@
 # crockford-base32
 
-An implementation of Douglas Crockford's Base 32 encoding algorithm.
+An implementation of Douglas Crockford's [Base 32 encoding algorithm](https://www.crockford.com/base32.html).
 
 ## Installation
 
@@ -88,3 +88,70 @@ Version 2.0.0 changed the encoding algorithm to read from the leftmost bit per
 the Crockford spec. If you were using this library to decode ULIDs and saw
 different output after upgrading, pass `{ variant: 'ulid' }` to restore the
 previous behaviour for ULID-encoded data.
+
+## Checksums
+
+Crockford's [check symbol](https://www.crockford.com/base32.html) is an
+optional single character appended to an encoded string to detect
+transcription errors. It is computed as `value mod 37` — one of 37
+characters: the 32-symbol Base 32 alphabet plus `*`, `~`, `$`, `=`, and `U`
+for values 32–36.
+
+Opt in via `{ checksum: true }`:
+
+```javascript
+const { CrockfordBase32 } = require('crockford-base32');
+
+CrockfordBase32.encode(Buffer.from([0xff]), { checksum: true }); // ZW~
+CrockfordBase32.encode(255n, { checksum: true }); // ZW~
+
+CrockfordBase32.decode('ZW~', { checksum: true }).toString('hex'); // ff
+CrockfordBase32.decode('ZW~', { checksum: true, asNumber: true }); // 255n
+```
+
+The same hyphen, case, and `I`/`L`/`O` normalization that applies to
+unchecksummed input also applies to checksummed input, including the
+trailing check symbol:
+
+```javascript
+CrockfordBase32.decode('ehjq6x-0v', { checksum: true }).toString(); // test
+
+// L and O at the check position are auto-corrected to 1 and 0
+CrockfordBase32.decode('1c8pal', { checksum: true, asNumber: true }); // 725349n
+CrockfordBase32.decode('1fa84o', { checksum: true, asNumber: true }); // 775298n
+```
+
+When validation fails, `decode()` throws one of two exported error classes:
+
+```javascript
+const {
+  CrockfordBase32,
+  InvalidChecksumCharacterError,
+  InvalidChecksumError,
+} = require('crockford-base32');
+
+try {
+  CrockfordBase32.decode('ZW!', { checksum: true });
+} catch (err) {
+  err instanceof InvalidChecksumCharacterError; // true — '!' is not a valid check character
+}
+
+try {
+  CrockfordBase32.decode('ZW0', { checksum: true });
+} catch (err) {
+  err instanceof InvalidChecksumError; // true — '0' is valid but does not match
+}
+```
+
+For a yes/no check without try/catch, use `verify()`:
+
+```javascript
+CrockfordBase32.verify('ZW~'); // true
+CrockfordBase32.verify('ZW0'); // false (mismatched checksum)
+CrockfordBase32.verify('ZW!'); // false (invalid check character)
+CrockfordBase32.verify(''); // false (empty input)
+```
+
+Checksums apply only to the default `crockford` variant. Passing
+`{ variant: 'ulid', checksum: true }` is rejected at both the type level
+and runtime — ULID's canonical form has no check symbol concept.

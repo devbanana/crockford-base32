@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `checksum` option on `encode()` and `decode()` for appending and
+  validating Crockford's optional check symbol. The check symbol is one
+  character (`value mod 37`) appended to the encoded string. Defaults to
+  `false`; passing `{ variant: 'ulid', checksum: true }` is rejected at
+  both the type level and runtime since ULID has no checksum concept.
+- `verify(input: string)` static method for non-throwing checksum
+  validation — returns `true`/`false` instead of throwing.
+- Exported `InvalidChecksumCharacterError` and `InvalidChecksumError`
+  classes for `instanceof` discrimination of `decode()` checksum failures.
+
 ## [2.1.0] - 2026-04-25
 
 ### Added
