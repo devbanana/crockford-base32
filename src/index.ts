@@ -181,6 +181,22 @@ export class CrockfordBase32 {
     return this.asBuffer(output);
   }
 
+  /**
+   * Validates whether `input` is a Crockford Base32 string with a correct
+   * trailing check symbol. Returns false for any malformed input (invalid
+   * characters, mismatched checksum, empty string), never throws.
+   *
+   * Use {@link decode} with `{ checksum: true }` if you need typed errors.
+   */
+  static verify(input: string): boolean {
+    try {
+      this.decode(input, { checksum: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private static encodeUlid(input: Buffer): string {
     // Keep empty binary input empty so Buffer round-trips do not become 0x00.
     if (input.length === 0) {

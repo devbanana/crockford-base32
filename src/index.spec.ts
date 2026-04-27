@@ -527,6 +527,78 @@ describe('Base32Encoder', () => {
     });
   });
 
+  describe('when verifying', () => {
+    it('returns true for a valid checksummed string', () => {
+      expect(CrockfordBase32.verify('ZW~')).toBe(true);
+    });
+
+    it('returns true for a multi-byte checksummed string', () => {
+      expect(CrockfordBase32.verify('MVJP6D2ZV')).toBe(true);
+    });
+
+    it('returns true for a checksummed string with hyphens', () => {
+      expect(CrockfordBase32.verify('EHJQ6X-0V')).toBe(true);
+    });
+
+    it('returns true for lowercase input', () => {
+      expect(CrockfordBase32.verify('mvjp6d2zv')).toBe(true);
+    });
+
+    it.each`
+      input    | description
+      ${'04I'} | ${'I in check position'}
+      ${'04L'} | ${'L in check position'}
+      ${'O'}   | ${'O in check position'}
+    `(
+      'returns true with auto-corrected $description',
+      ({ input }: { input: string }) => {
+        expect(CrockfordBase32.verify(input)).toBe(true);
+      },
+    );
+
+    it('returns true for "0" (empty data with zero checksum)', () => {
+      expect(CrockfordBase32.verify('0')).toBe(true);
+    });
+
+    it('returns true for an encode round-trip', () => {
+      const encoded = CrockfordBase32.encode(Buffer.from('test'), {
+        checksum: true,
+      });
+      expect(CrockfordBase32.verify(encoded)).toBe(true);
+    });
+
+    it('returns false for empty input', () => {
+      expect(CrockfordBase32.verify('')).toBe(false);
+    });
+
+    it('returns false for an invalid check character', () => {
+      expect(CrockfordBase32.verify('ZW!')).toBe(false);
+    });
+
+    it('returns false for a mismatched checksum', () => {
+      // 0xff's correct checksum is '~'; '0' is wrong
+      expect(CrockfordBase32.verify('ZW0')).toBe(false);
+    });
+
+    it('returns false for an invalid base32 character in the data portion', () => {
+      // U is not allowed in the data; 'X' at the end is a valid check char
+      expect(CrockfordBase32.verify('UAX')).toBe(false);
+    });
+
+    it('returns false for a "U" check symbol that does not match', () => {
+      // 'U' = 36; for empty data, checksum is 0, so 'U' alone is a mismatch
+      expect(CrockfordBase32.verify('U')).toBe(false);
+    });
+
+    it('does not throw for non-string input', () => {
+      // verify is a yes/no contract — even programmer-error calls return false
+      expect(() =>
+        CrockfordBase32.verify(null as unknown as string),
+      ).not.toThrow();
+      expect(CrockfordBase32.verify(null as unknown as string)).toBe(false);
+    });
+  });
+
   describe('when decoding ULIDs', () => {
     it('can decode', () => {
       // Test round-trip: encoding should decode back correctly
