@@ -15,6 +15,9 @@ export class InvalidChecksumCharacterError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'InvalidChecksumCharacterError';
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
   }
 }
 
@@ -22,6 +25,9 @@ export class InvalidChecksumError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'InvalidChecksumError';
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
   }
 }
 
