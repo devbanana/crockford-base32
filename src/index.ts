@@ -292,6 +292,10 @@ export class CrockfordBase32 {
 
   private static createBuffer(input: number | bigint): Buffer {
     if (typeof input === 'number') {
+      if (!Number.isSafeInteger(input)) {
+        throw new Error('Input must be a safe integer');
+      }
+
       input = BigInt(input);
     }
 
