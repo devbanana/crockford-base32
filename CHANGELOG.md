@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exported `InvalidChecksumCharacterError` and `InvalidChecksumError`
   classes for `instanceof` discrimination of `decode()` checksum failures.
 
+### Fixed
+
+- `encode()` now rejects unsafe `number` inputs (above
+  `Number.MAX_SAFE_INTEGER`, fractional, `NaN`, or `Infinity`) with a
+  clear error instead of silently encoding a float-rounded value. Pass a
+  `bigint` for values larger than `Number.MAX_SAFE_INTEGER`.
+
 ## [2.1.0] - 2026-04-25
 
 ### Added

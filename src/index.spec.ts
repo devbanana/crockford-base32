@@ -47,6 +47,12 @@ describe('Base32Encoder', () => {
       );
     });
 
+    it('rejects unsafe number inputs', () => {
+      expect(() =>
+        CrockfordBase32.encode(Number.MAX_SAFE_INTEGER + 1),
+      ).toThrowError('Input must be a safe integer');
+    });
+
     it('cannot take a negative bigint', () => {
       expect(() => CrockfordBase32.encode(-21233n)).toThrowError(
         'Input cannot be a negative number',
