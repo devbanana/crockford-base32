@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "./lib",
     "declaration": true,
-    "strict": true
+    "strict": true,
+    "noEmit": true
   },
-  "files": ["./src/index.ts"]
+  "include": ["src/**/*"]
 }
