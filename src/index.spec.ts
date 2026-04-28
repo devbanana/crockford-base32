@@ -47,10 +47,17 @@ describe('Base32Encoder', () => {
       );
     });
 
-    it('rejects unsafe number inputs', () => {
-      expect(() =>
-        CrockfordBase32.encode(Number.MAX_SAFE_INTEGER + 1),
-      ).toThrowError('Input must be a safe integer');
+    it.each`
+      label                       | input
+      ${'above MAX_SAFE_INTEGER'} | ${Number.MAX_SAFE_INTEGER + 1}
+      ${'fractional'}             | ${3.14}
+      ${'NaN'}                    | ${Number.NaN}
+      ${'Infinity'}               | ${Number.POSITIVE_INFINITY}
+      ${'-Infinity'}              | ${Number.NEGATIVE_INFINITY}
+    `('rejects $label number inputs', ({ input }: { input: number }) => {
+      expect(() => CrockfordBase32.encode(input)).toThrowError(
+        'Input must be a safe integer',
+      );
     });
 
     it('cannot take a negative bigint', () => {
