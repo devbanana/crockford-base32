@@ -1,4 +1,8 @@
-import { Buffer } from 'buffer';
+// Conditional Buffer detection for Node.js/browser compatibility
+let BufferImpl: typeof Buffer | undefined;
+if (typeof globalThis !== 'undefined' && 'Buffer' in globalThis) {
+  BufferImpl = (globalThis as any).Buffer;
+}
 
 const characters = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const checksumCharacters = '*~$=U';
@@ -38,13 +42,13 @@ export class InvalidChecksumError extends Error {
  */
 export class CrockfordBase32 {
   static encode(
-    input: Buffer | number | bigint,
+    input: Buffer | Uint8Array | number | bigint,
     options?: EncodeOptions,
   ): string {
-    if (input instanceof Buffer) {
-      input = Buffer.from(input);
+    if (input instanceof Buffer || input instanceof Uint8Array) {
+      // Already a byte array (Buffer or Uint8Array), use as-is
     } else {
-      input = this.createBuffer(input);
+      input = this.createByteArray(input);
     }
 
     const variant = options?.variant ?? 'crockford';
@@ -98,11 +102,14 @@ export class CrockfordBase32 {
   }
 
   static decode(input: string, options: DecodeAsNumberOptions): bigint;
-  static decode(input: string, options?: DecodeAsBufferOptions): Buffer;
+  static decode(
+    input: string,
+    options?: DecodeAsBufferOptions,
+  ): Buffer | Uint8Array;
   static decode(
     input: string,
     options?: DecodeAsNumberOptions | DecodeAsBufferOptions,
-  ): bigint | Buffer {
+  ): bigint | Buffer | Uint8Array {
     // 1. Translate input to all uppercase
     // 2. Translate I, L, and O to valid base 32 characters
     // 3. Remove all hyphens
@@ -203,7 +210,7 @@ export class CrockfordBase32 {
     }
   }
 
-  private static encodeUlid(input: Buffer): string {
+  private static encodeUlid(input: Buffer | Uint8Array): string {
     // Keep empty binary input empty so Buffer round-trips do not become 0x00.
     if (input.length === 0) {
       return '';
@@ -235,7 +242,7 @@ export class CrockfordBase32 {
   private static decodeUlid(
     input: string,
     options?: DecodeAsNumberOptions | DecodeAsBufferOptions,
-  ): bigint | Buffer {
+  ): bigint | Buffer | Uint8Array {
     // Empty encoded data represents no bytes; asNumber has no empty numeric
     // value, so return the same numeric zero used by other empty decodes.
     if (input.length === 0) {
@@ -290,7 +297,7 @@ export class CrockfordBase32 {
     return this.asBuffer(output);
   }
 
-  private static createBuffer(input: number | bigint): Buffer {
+  private static createByteArray(input: number | bigint): Buffer | Uint8Array {
     if (typeof input === 'number') {
       if (!Number.isSafeInteger(input)) {
         throw new Error('Input must be a safe integer');
@@ -310,7 +317,11 @@ export class CrockfordBase32 {
       input >>= 8n;
     }
 
-    return Buffer.from(bytes);
+    // Return Buffer in Node, Uint8Array in browser
+    if (BufferImpl) {
+      return BufferImpl.from(bytes);
+    }
+    return new (globalThis as any).Uint8Array(bytes);
   }
 
   private static asNumber(output: number[]): bigint {
@@ -324,10 +335,16 @@ export class CrockfordBase32 {
     return outputNumber;
   }
 
-  private static asBuffer(output: number[]): Buffer {
-    return Buffer.from(
-      output.map(byte => byte.toString(16).padStart(2, '0')).join(''),
-      'hex',
-    );
+  private static asBuffer(output: number[]): Buffer | Uint8Array {
+    // Return Buffer in Node, Uint8Array in browser
+    if (BufferImpl) {
+      return BufferImpl.from(
+        output.map(byte => byte.toString(16).padStart(2, '0')).join(''),
+        'hex',
+      );
+    }
+
+    // Browser: convert bytes directly to Uint8Array
+    return new (globalThis as any).Uint8Array(output);
   }
 }

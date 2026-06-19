@@ -2,6 +2,13 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  globals: {
+    'ts-jest': {
+      tsconfig: {
+        lib: ['ES2020', 'DOM'],
+      },
+    },
+  },
   coverageThreshold: {
     global: {
       branches: 100,
