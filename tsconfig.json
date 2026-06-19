@@ -4,7 +4,8 @@
     "outDir": "./lib",
     "declaration": true,
     "strict": true,
-    "noEmit": true
+    "noEmit": true,
+    "lib": ["ES2020", "DOM"]
   },
   "include": ["src/**/*"]
 }
